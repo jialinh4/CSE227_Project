@@ -1,0 +1,42 @@
+# --- Python & OS ---
+__pycache__/
+*.py[cod]
+*.pyo
+.DS_Store
+.venv/
+*.egg-info/
+
+# --- Build/Temp ---
+*.tmp
+*.log
+
+# --- Project data (local only; keep empty dirs via .gitkeep) ---
+data/raw/**
+data/interim/**
+data/processed/**
+outputs/**
+
+# Keep placeholder files so empty dirs stay in Git
+!.gitkeep
+!**/.gitkeep
+
+# --- Media anywhere (avoid accidental commits) ---
+*.mp4
+*.m4v
+*.mov
+*.avi
+*.mkv
+*.webm
+*.wmv
+*.gif
+*.wav
+*.mp3
+*.aac
+*.flac
+*.ogg
+
+# --- Archives/large binaries ---
+*.zip
+*.tar
+*.tar.gz
+*.7z

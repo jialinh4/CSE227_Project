@@ -1,0 +1,19 @@
+[project]
+name = "vaderx"
+version = "0.1.0"
+description = "OpenCV-based video editing pipeline skeleton"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "opencv-python",
+    "numpy",
+    "typer>=0.12",
+    "pyyaml",
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
