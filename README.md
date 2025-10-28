@@ -87,10 +87,11 @@ python -m vaderx.cli edit --config configs/edit.sample.yaml
 ### 5. Deactivate the virtual environment
 
 To exit the virtual environment created by `scripts/dev_install.sh`:
-    deactivate
-
+```deactivate
+```
 To activate it again later:
-    source .venv/bin/activate
+```source .venv/bin/activate
+```
 
 
 ---
