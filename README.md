@@ -86,20 +86,6 @@ python -m vaderx.cli edit --config configs/edit.sample.yaml
 
 ---
 
-## 📂 Directory Guide (Simplified)
-
-| Directory | Purpose | Version Control |
-|------------|----------|----------------|
-| `src/` | All source code for pipeline and CLI | ✅ |
-| `scripts/` | Helper scripts for environment & runs | ✅ |
-| `configs/` | Config files for batch editing | ✅ |
-| `data/raw/` | Original videos (e.g., `test1.mp4`) | 🚫 ignored |
-| `data/interim/` | Temporary intermediate outputs | 🚫 ignored |
-| `data/processed/` | Stable processed data | 🚫 ignored |
-| `outputs/` | Final exported videos | 🚫 ignored |
-
----
-
 ## 🧰 Next Steps
 
 - Extend `ops.py` with new effects (crop, fade, stabilize).  
