@@ -9,4 +9,4 @@ python -m vaderx.cli \
   --resize 1280x720 \
   --gray
 
-echo "✔ Wrote outputs/test1_edit.mp4"
+echo "✔ Successfully executed run_edit.sh"
