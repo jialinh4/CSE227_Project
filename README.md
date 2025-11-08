@@ -88,7 +88,18 @@ Edit `configs/edit.sample.yaml`, then run:
 python -m vaderx.cli edit --config configs/edit.sample.yaml
 ```
 
-### 5. Human Segmentation (alpha masks)
+### 5. End-to-end leakage baseline via helper script
+```bash
+bash scripts/run_leakage_pipeline.sh data/raw/test1.mp4 test1_zoom
+```
+This single command activates the virtualenv (if present), ensures the `vaderx` package is installed locally, runs segmentation, and then measures ELR/BER. It writes:
+- Masks: `masks/test1_zoom/frame_*.png`
+- Metrics: `results/baseline_test1_zoom.csv` + `results/baseline_test1_zoom.png`
+- Snapshots: `results/snapshots/test1_zoom/frame_*.png`
+
+Tweak behavior by exporting environment variables before invoking, e.g. `SEG_BACKEND=deeplabv3 SNAPSHOT_ELR_THRESHOLD=0.6 bash scripts/run_leakage_pipeline.sh ...`. Leaving them unset lets the Python tooling use its built-in defaults.
+
+### 6. Human Segmentation (alpha masks)
 ```bash
 python -m vaderx.cli segment \
   --in_path data/raw/test1.mp4 \
@@ -98,7 +109,7 @@ python -m vaderx.cli segment \
 ```
 Outputs `masks/test1/frame_*.png` alpha mattes plus metadata. `--backend auto` prefers MediaPipe and falls back to DeepLabV3 if MediaPipe is unavailable.
 
-### 6. Leakage Metrics (ELR / BER)
+### 7. Leakage Metrics (ELR / BER)
 ```bash
 python scripts/measure_leakage.py \
   --video data/raw/test1.mp4 \
@@ -114,7 +125,7 @@ The optional `--warmup_frames` flag suppresses the first N frames to avoid initi
 
 > `bash scripts/run_leakage_pipeline.sh data/raw/test1.mp4 test1_zoom` already wires snapshots on by default, writing them to `results/snapshots/test1_zoom/`. Override paths/thresholds with `SNAPSHOT_DIR`, `SNAPSHOT_ELR_THRESHOLD`, etc. environment variables before running the script.
 
-### 7. Deactivate the virtual environment
+### 8. Deactivate the virtual environment
 
 To exit the virtual environment created by `scripts/dev_install.sh`:
 ```bash
