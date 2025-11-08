@@ -9,6 +9,10 @@ dependencies = [
     "numpy",
     "typer>=0.12",
     "pyyaml",
+    "mediapipe",
+    "torch",
+    "torchvision",
+    "matplotlib",
 ]
 
 [build-system]

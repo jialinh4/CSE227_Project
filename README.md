@@ -18,6 +18,8 @@ The project aims to:
 
 - Load and edit sample videos (`test1.mp4`) using OpenCV.
 - Apply simple transformations: grayscale conversion, resizing, and trimming by timestamp.
+- Generate per-frame human alpha masks (MediaPipe Selfie Segmentation with DeepLabV3 fallback) under `masks/<video_id>/`.
+- Compute baseline leakage metrics (ELR / BER) + plots from masks and source frames, with optional flagged-frame snapshots.
 - Command-line interface powered by **Typer** for flexible use.
 - Fully structured pipeline with isolated data stages (`raw`, `interim`, `processed`, `outputs`).
 - `.gitignore` optimized to exclude all large/binary media files automatically.
@@ -46,7 +48,9 @@ CSE227_Project/
 │  ├─ raw/                 # Original sample videos (e.g., test1.mp4)
 │  ├─ interim/             # Intermediate outputs (e.g., frames, masks)
 │  └─ processed/           # Preprocessed stable data for reuse
+├─ masks/                  # Generated alpha mattes per video (auto-created)
 ├─ outputs/                # Final exported results (e.g., test1_edit.mp4)
+├─ results/                # CSV + plots for leakage measurements (snapshots under results/snapshots/)
 └─ tests/                  # Unit and smoke tests
 ```
 
@@ -84,7 +88,33 @@ Edit `configs/edit.sample.yaml`, then run:
 python -m vaderx.cli edit --config configs/edit.sample.yaml
 ```
 
-### 5. Deactivate the virtual environment
+### 5. Human Segmentation (alpha masks)
+```bash
+python -m vaderx.cli segment \
+  --in_path data/raw/test1.mp4 \
+  --mask_root masks \
+  --backend auto \
+  --smooth_kernel 5
+```
+Outputs `masks/test1/frame_*.png` alpha mattes plus metadata. `--backend auto` prefers MediaPipe and falls back to DeepLabV3 if MediaPipe is unavailable.
+
+### 6. Leakage Metrics (ELR / BER)
+```bash
+python scripts/measure_leakage.py \
+  --video data/raw/test1.mp4 \
+  --mask_dir masks/test1 \
+  --results_dir results \
+  --warmup_frames 30 \
+  --snapshot_dir results/snapshots \
+  --snapshot_elr_threshold 0.85 \
+  --snapshot_ber_threshold 0.6
+```
+Produces `results/baseline_test1.csv` (per-frame ELR/BER + summary) and `results/baseline_test1.png` (line plot).
+The optional `--warmup_frames` flag suppresses the first N frames to avoid initialization spikes. Supplying `--snapshot_dir` also saves annotated frames under `results/snapshots/test1/` whenever ELR/BER spikes beyond the provided thresholds; those timestamps are highlighted on the plot.
+
+> `bash scripts/run_leakage_pipeline.sh data/raw/test1.mp4 test1_zoom` already wires snapshots on by default, writing them to `results/snapshots/test1_zoom/`. Override paths/thresholds with `SNAPSHOT_DIR`, `SNAPSHOT_ELR_THRESHOLD`, etc. environment variables before running the script.
+
+### 7. Deactivate the virtual environment
 
 To exit the virtual environment created by `scripts/dev_install.sh`:
 ```bash

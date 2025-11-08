@@ -2,6 +2,7 @@ import typer
 from typing import Optional
 import re, yaml
 from .pipeline import EditConfig, process_video
+from .segmentation import segment_video as run_segmentation
 
 app = typer.Typer(help="vaderx video tools", add_completion=False)
 
@@ -37,6 +38,33 @@ def edit(
     cfg = EditConfig(start_sec=start, end_sec=end, resize_to=size, gray=gray)
     process_video(in_path, out_path, cfg)
     typer.echo(f"✔ Wrote {out_path}")
+
+
+@app.command()
+def segment(
+    in_path: str = typer.Option(..., "--in_path", help="Input video path"),
+    mask_root: str = typer.Option("masks", "--mask_root", help="Destination root for masks"),
+    video_id: Optional[str] = typer.Option(None, "--video_id", help="Optional override for mask folder name"),
+    backend: str = typer.Option("auto", "--backend", help="Segmentation backend: auto|mediapipe|deeplabv3"),
+    stride: int = typer.Option(1, "--stride", min=1, help="Process every Nth frame"),
+    smooth_kernel: int = typer.Option(
+        0, "--smooth_kernel", help="Optional Gaussian blur kernel (odd, >=3) for alpha smoothing"
+    ),
+):
+    """Generate per-frame alpha masks for a video."""
+    result = run_segmentation(
+        in_path=in_path,
+        mask_root=mask_root,
+        backend=backend,
+        video_id=video_id,
+        stride=stride,
+        smooth_kernel=smooth_kernel,
+        progress=True,
+    )
+    typer.echo(
+        f"✔ Wrote {result.masks_written} masks to {result.mask_dir} "
+        f"(backend={result.backend})"
+    )
 
 if __name__ == "__main__":
     app()
