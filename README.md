@@ -155,6 +155,43 @@ containing all defense configurations and output directories.
 
 ---
 
+## 🧪 Run with Dummy Data
+
+Use a tiny synthetic dataset (no `data/raw` needed) to smoke-test the defense pipeline.
+
+### 1) Generate dummy frames & masks
+Save as `scripts/gen_dummy_data.py` and run:
+```bash
+source .venv/bin/activate
+python scripts/gen_dummy_data.py
+# Outputs:
+# data/interim/frames/test1/%06d.png
+# data/interim/masks/test1/%06d.png
+```
+
+### 2) Run a defense (no dataset mode)
+```bash
+export PYTHONPATH="src:${PYTHONPATH:-}"
+python -m pipeline   --video-id test1   --masks-dir data/interim/masks   --frames-dir data/interim/frames   --defense erosion   --params "radius: 9"   --seed 1234
+# Outputs:
+# outputs/defenses/test1/erosion_r9/*.png
+# outputs/frames_defended/test1/erosion_r9/*.png
+```
+
+### 3) Export a preview video (optional)
+```bash
+python scripts/export_defended_video.py test1 erosion_r9 24
+# Output:
+# outputs/videos/test1_erosion_r9.mp4
+```
+
+**Notes**
+- Ensure `export PYTHONPATH="src:${PYTHONPATH:-}"` before running the pipeline.
+- You can switch to dataset mode later by adding a `dummy` entry in `configs/datasets.yml` and calling `python -m pipeline --dataset dummy ...`.
+
+
+---
+
 
 ## 🧹 Cleaning Generated Files
 
