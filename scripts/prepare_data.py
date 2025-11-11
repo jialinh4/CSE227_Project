@@ -9,17 +9,30 @@ from pathlib import Path
 sys.path.insert(0, "src")
 from config import load_datasets_cfg, get_dataset  # noqa
 
+
 def run_ffmpeg_extract(raw_mp4: str, out_frames_dir: str, fps: int | None = None):
+    """
+    Extract frames from MP4 to PNG sequence.
+    - If fps is provided: resample with -vf fps=<fps>.
+    - Else: dump all source frames without -vsync/-r to avoid ffmpeg 7.x conflicts.
+    """
     Path(out_frames_dir).mkdir(parents=True, exist_ok=True)
     if fps and fps > 0:
-        cmd = f'ffmpeg -y -i "{raw_mp4}" -r {fps} -vsync 0 "{out_frames_dir}/%06d.png"'
+        cmd = (
+            f'ffmpeg -y -hide_banner -i "{raw_mp4}" '
+            f'-map 0:v:0 -vf "fps={fps}" "{out_frames_dir}/%06d.png"'
+        )
     else:
-        cmd = f'ffmpeg -y -i "{raw_mp4}" -vsync 0 "{out_frames_dir}/%06d.png"'
+        cmd = (
+            f'ffmpeg -y -hide_banner -i "{raw_mp4}" '
+            f'-map 0:v:0 "{out_frames_dir}/%06d.png"'
+        )
     print(f"[ffmpeg] {cmd}")
     p = subprocess.run(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     print(p.stdout)
     if p.returncode != 0:
         raise RuntimeError("ffmpeg extract failed")
+
 
 def gen_bgsub_masks(frames_dir: str, masks_dir: str, max_samples: int = 200, thr: int = 30, open_kernel: int = 5):
     Path(masks_dir).mkdir(parents=True, exist_ok=True)
@@ -44,6 +57,7 @@ def gen_bgsub_masks(frames_dir: str, masks_dir: str, max_samples: int = 200, thr
         outp = os.path.join(masks_dir, f"{i:06d}.png")
         cv2.imwrite(outp, mask)
     print(f"[done] Wrote masks to {masks_dir}")
+
 
 def main():
     ap = argparse.ArgumentParser(description="Prepare datasets: extract frames and generate masks by background subtraction.")
@@ -75,7 +89,6 @@ def main():
         if args.skip_extract:
             print(f"[skip] extract for {name}")
         else:
-            # Skip extract if frames already exist
             if glob.glob(os.path.join(frames_dir, "*.png")):
                 print(f"[info] frames exist: {frames_dir} (skipping extract)")
             else:
@@ -86,6 +99,7 @@ def main():
             print(f"[skip] masks for {name}")
         else:
             gen_bgsub_masks(frames_dir, masks_dir, max_samples=args.max_samples, thr=args.thr, open_kernel=args.open_kernel)
+
 
 if __name__ == "__main__":
     main()
