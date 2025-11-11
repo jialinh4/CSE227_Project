@@ -1,18 +1,13 @@
 #!/usr/bin/env python3
 # Only English comments and print messages.
-import os, sys, csv, yaml, subprocess, shlex
+import os, sys, csv, yaml, subprocess, shlex, argparse
 from itertools import product
 
-GRID_PATH = "configs/defenses_grid.yml"
-VIDEO_ID = os.environ.get("VIDEO_ID", "test1")
-MASKS_DIR = os.environ.get("MASKS_DIR", "data/interim/masks")
-FRAMES_DIR = os.environ.get("FRAMES_DIR", "data/interim/frames")
-OUT_ALPHA_ROOT = os.environ.get("OUT_ALPHA_ROOT", "outputs/defenses")
-OUT_FRAMES_ROOT = os.environ.get("OUT_FRAMES_ROOT", "outputs/frames_defended")
-SEED = os.environ.get("SEED", "1234")
-RESULTS_CSV = os.environ.get("RESULTS_CSV", f"outputs/bench_{VIDEO_ID}.csv")
+sys.path.insert(0, "src")
+from config import get_dataset  # dataset registry
 
-MEASURE_SCRIPT = "scripts/measure_leakage.py"  # optional; adapt CLI if needed
+GRID_PATH = "configs/defenses_grid.yml"
+MEASURE_SCRIPT = "scripts/measure_leakage.py"  # optional
 
 def run_cmd(cmd: str):
     print(f"[run] {cmd}")
@@ -25,71 +20,74 @@ def run_cmd(cmd: str):
 def ensure_dir(d: str):
     os.makedirs(d, exist_ok=True)
 
-def write_row(writer, defense, params_str, variant):
-    out_alpha_dir = f"{OUT_ALPHA_ROOT}/{VIDEO_ID}/{variant}"
-    out_frames_dir = f"{OUT_FRAMES_ROOT}/{VIDEO_ID}/{variant}"
-    writer.writerow([defense, params_str, variant, out_alpha_dir, out_frames_dir, SEED])
-
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--dataset", required=True, help="dataset name in configs/datasets.yml")
+    ap.add_argument("--seed", default="1234")
+    args = ap.parse_args()
+
+    ds = get_dataset(args.dataset)
+    video_id = ds.video_id
+    masks_dir = ds.get("masks_dir", "data/interim/masks")
+    frames_dir = ds.get("frames_dir", "data/interim/frames")
+    out_root = ds.get("outputs_root", "outputs")
+    out_alpha_root = os.path.join(out_root, "defenses")
+    out_frames_root = os.path.join(out_root, "frames_defended")
+
     with open(GRID_PATH, "r") as f:
         grid = yaml.safe_load(f)
 
-    ensure_dir(os.path.dirname(RESULTS_CSV) or ".")
-    with open(RESULTS_CSV, "w", newline="") as f:
+    results_csv = os.path.join(out_root, f"bench_{video_id}.csv")
+    ensure_dir(out_root)
+    with open(results_csv, "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["defense", "params", "variant", "out_alpha_dir", "out_frames_dir", "seed"])
+        w.writerow(["defense","params","variant","out_alpha_dir","out_frames_dir","seed"])
 
-        # Erosion
-        for r in grid.get("erosion", {}).get("radius", []):
-            params = f"radius: {r}"
+        # erosion
+        for r in grid.get("erosion",{}).get("radius",[]):
             variant = f"erosion_r{r}"
-            cmd = (
-                f"python -m pipeline --video-id {VIDEO_ID} "
-                f"--masks-dir {MASKS_DIR} --frames-dir {FRAMES_DIR} "
-                f"--defense erosion --params '{params}' "
-                f"--out-alpha-root {OUT_ALPHA_ROOT} --out-frames-root {OUT_FRAMES_ROOT} "
-                f"--seed {SEED}"
-            )
+            cmd = (f"python -m pipeline --dataset {args.dataset} "
+                   f"--defense erosion --params 'radius: {r}' --seed {args.seed}")
             if run_cmd(cmd):
-                write_row(w, "erosion", f"radius={r}", variant)
+                w.writerow(["erosion", f"radius={r}",
+                            variant,
+                            f"{out_alpha_root}/{video_id}/{variant}",
+                            f"{out_frames_root}/{video_id}/{variant}",
+                            args.seed])
 
-        # Temporal jitter
-        tj = grid.get("temporal_jitter", {})
-        for s, p in product(tj.get("shift_px", []), tj.get("prob", [])):
-            params = f"shift_px: {s}\nprob: {p}"
+        # temporal_jitter
+        tj = grid.get("temporal_jitter",{})
+        for s,p in product(tj.get("shift_px",[]), tj.get("prob",[])):
             variant = f"tjit_s{s}_p{p}"
-            cmd = (
-                f"python -m pipeline --video-id {VIDEO_ID} "
-                f"--masks-dir {MASKS_DIR} --frames-dir {FRAMES_DIR} "
-                f"--defense temporal_jitter --params '{params}' "
-                f"--out-alpha-root {OUT_ALPHA_ROOT} --out-frames-root {OUT_FRAMES_ROOT} "
-                f"--seed {SEED}"
-            )
+            cmd = (f"python -m pipeline --dataset {args.dataset} "
+                   f"--defense temporal_jitter --params 'shift_px: {s}\nprob: {p}' --seed {args.seed}")
             if run_cmd(cmd):
-                write_row(w, "temporal_jitter", f"shift_px={s},prob={p}", variant)
+                w.writerow(["temporal_jitter", f"shift_px={s},prob={p}",
+                            variant,
+                            f"{out_alpha_root}/{video_id}/{variant}",
+                            f"{out_frames_root}/{video_id}/{variant}",
+                            args.seed])
 
-        # Boundary noise
-        bn = grid.get("boundary_noise", {})
-        for sigma, band in product(bn.get("sigma", []), bn.get("band_width", [])):
-            params = f"sigma: {sigma}\nband_width: {band}"
+        # boundary_noise
+        bn = grid.get("boundary_noise",{})
+        for sigma,band in product(bn.get("sigma",[]), bn.get("band_width",[])):
             variant = f"bnoise_s{sigma}_b{band}"
-            cmd = (
-                f"python -m pipeline --video-id {VIDEO_ID} "
-                f"--masks-dir {MASKS_DIR} --frames-dir {FRAMES_DIR} "
-                f"--defense boundary_noise --params '{params}' "
-                f"--out-alpha-root {OUT_ALPHA_ROOT} --out-frames-root {OUT_FRAMES_ROOT} "
-                f"--seed {SEED}"
-            )
+            cmd = (f"python -m pipeline --dataset {args.dataset} "
+                   f"--defense boundary_noise --params 'sigma: {sigma}\nband_width: {band}' --seed {args.seed}")
             if run_cmd(cmd):
-                write_row(w, "boundary_noise", f"sigma={sigma},band_width={band}", variant)
+                w.writerow(["boundary_noise", f"sigma={sigma},band_width={band}",
+                            variant,
+                            f"{out_alpha_root}/{video_id}/{variant}",
+                            f"{out_frames_root}/{video_id}/{variant}",
+                            args.seed])
 
-    # Optional: measurement step (adapt to your script)
+    # Optional measure script
     if os.path.isfile(MEASURE_SCRIPT):
         print("[info] Running leakage measurement...")
-        cmd = f"python {MEASURE_SCRIPT} --video-id {VIDEO_ID} --inputs {OUT_FRAMES_ROOT}/{VIDEO_ID}"
+        cmd = f"python {MEASURE_SCRIPT} --video-id {video_id} --inputs {out_frames_root}/{video_id}"
         run_cmd(cmd)
 
-    print(f"[done] Wrote grid summary to {RESULTS_CSV}")
+    print(f"[done] Wrote grid summary to {results_csv}")
 
 if __name__ == "__main__":
     main()

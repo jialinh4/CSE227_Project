@@ -1,0 +1,17 @@
+# Central dataset registry.
+# You can add many datasets here and keep paths consistent.
+datasets:
+  test1:
+    raw_video: data/raw/test1.mp4
+    frames_dir: data/interim/frames/test1
+    masks_dir: data/interim/masks/test1
+    outputs_root: outputs
+    fps: 24
+
+  # Add more datasets as needed:
+  # sampleA:
+  #   raw_video: data/raw/sampleA.mp4
+  #   frames_dir: data/interim/frames/sampleA
+  #   masks_dir: data/interim/masks/sampleA
+  #   outputs_root: outputs
+  #   fps: 30

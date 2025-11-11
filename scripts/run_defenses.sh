@@ -3,13 +3,11 @@ set -euo pipefail
 source .venv/bin/activate || true
 export PYTHONPATH="src:${PYTHONPATH:-}"
 
+# Use dataset registry
 python -m pipeline \
-  --video-id test1 \
-  --masks-dir data/interim/masks \
-  --frames-dir data/interim/frames \
+  --dataset test1 \
   --defense erosion \
   --params "radius: 9" \
-  --out-alpha-root outputs/defenses \
-  --out-frames-root outputs/frames_defended
+  --seed 1234
 
 echo "✔ Successfully executed run_defenses.sh"

@@ -1,26 +1,44 @@
-# CSE227 Video Editing Pipeline (OpenCV-based)
+# CSE227 Defense-Integrated Video Pipeline (OpenCV-based)
 
-This repository provides a minimal yet extensible **video editing pipeline** built on **OpenCV**.  
-It is designed as a clean, modular starting point for future expansion—allowing the team to progressively add features such as stabilization, effects, segmentation, or sound overlays.
+This repository now provides a **modular, defense-oriented video processing pipeline** built on **OpenCV + Typer**, designed for the **CSE227 Fall 2025** project.
+
+It preserves the original `vaderx` editing pipeline for reference while introducing a new, independent **defense pipeline** and **dataset management system** that together form the foundation for later attack–defense experiments.
 
 ---
 
 ## 🎯 Purpose
 
-The project aims to:
-- Provide a reproducible, Python-based environment for basic video editing and processing.  
-- Serve as a foundation for CSE227 project development (e.g., Poisson blending, visual analysis, and future ML components).  
-- Maintain a clean Git structure—only code/configs are versioned, while all videos and data outputs are ignored.
+The updated pipeline aims to:
+
+- Provide a **reproducible defense baseline** for video-leakage and privacy research.  
+- Support modular extensions for **attack baselines (T3)** and **defense strategies (T4)** without breaking legacy code.  
+- Maintain strict Git hygiene—only code and configs are versioned; all videos, frames, and generated results stay local.
 
 ---
 
 ## ⚙️ Current Features
 
-- Load and edit sample videos (`test1.mp4`) using OpenCV.
-- Apply simple transformations: grayscale conversion, resizing, and trimming by timestamp.
-- Command-line interface powered by **Typer** for flexible use.
-- Fully structured pipeline with isolated data stages (`raw`, `interim`, `processed`, `outputs`).
-- `.gitignore` optimized to exclude all large/binary media files automatically.
+✅ **Defense Pipeline (New)**
+- Implements three core *defense mechanisms* for alpha masks:
+  - **Erosion:** morphological shrinking of mask regions.  
+  - **Boundary Noise:** adds Gaussian noise to boundary bands.  
+  - **Temporal Jitter:** randomly shifts masks slightly across frames.  
+- Outputs both *defended alpha masks* and *composited preview frames*.  
+- Fully CLI-driven and dataset-configurable.  
+- Compatible with downstream evaluation (e.g., leakage measurement).
+
+✅ **Dataset Registry**
+- Centralized config file (`configs/datasets.yml`) manages all video sources, frame paths, and output directories.
+- Allows batch preparation (frame extraction + background-subtraction mask generation).
+
+✅ **Automation Tools**
+- `scripts/prepare_data.py` — auto-extract frames & generate masks from raw `.mp4`.  
+- `scripts/run_defenses.sh` — run a single defense on one dataset.  
+- `scripts/bench_defenses.py` — run a full parameter grid across all defenses and export CSV summary.  
+- `scripts/export_defended_video.sh` — combine defended frames into final `.mp4` previews.
+
+✅ **Legacy Editing Pipeline**
+- The original OpenCV `vaderx/` editing system remains intact and runnable (`scripts/run_edit.sh`).
 
 ---
 
@@ -28,26 +46,52 @@ The project aims to:
 
 ```
 CSE227_Project/
-├─ README.md               # Documentation (this file)
-├─ requirements.txt        # Python dependencies
-├─ pyproject.toml          # Package metadata
-├─ .gitignore              # Ignores all video/data outputs
-├─ configs/                # YAML configs for pipeline parameters
-├─ scripts/                # Bash utilities for setup and runs
-│  ├─ dev_install.sh       # Create virtual env & install dependencies
-│  └─ run_edit.sh          # Example: edit and export test1.mp4
+├─ README.md
+├─ requirements.txt
+├─ pyproject.toml
+├─ .gitignore
+│
+├─ configs/
+│  ├─ datasets.yml           # Central dataset registry
+│  └─ defenses_grid.yml      # Parameter grid for batch defense evaluation
+│
+├─ scripts/
+│  ├─ dev_install.sh         # Create venv & install deps
+│  ├─ prepare_data.py        # Extract frames & auto-generate masks
+│  ├─ run_defenses.sh        # Run one defense on a dataset
+│  ├─ bench_defenses.py      # Batch all defense configs → CSV
+│  ├─ export_defended_video.sh  # Export defended frames → .mp4
+│  └─ run_edit.sh            # Legacy edit demo
+│
 ├─ src/
-│  └─ vaderx/              # Main source code (OpenCV pipeline)
-│     ├─ io.py             # Video I/O utilities
-│     ├─ ops.py            # Frame-level operations
-│     ├─ pipeline.py       # Main video processing flow
-│     └─ cli.py            # Command-line interface entry
+│  ├─ pipeline.py            # New defense pipeline (CLI)
+│  ├─ config.py              # Dataset registry loader
+│  └─ defense/
+│      ├─ __init__.py
+│      ├─ defenses.py        # Core defense algorithms
+│      ├─ io.py              # I/O helpers
+│
+│  └─ vaderx/                # Legacy OpenCV editing module (unchanged)
+│      ├─ io.py
+│      ├─ ops.py
+│      ├─ pipeline.py
+│      └─ cli.py
+│
 ├─ data/
-│  ├─ raw/                 # Original sample videos (e.g., test1.mp4)
-│  ├─ interim/             # Intermediate outputs (e.g., frames, masks)
-│  └─ processed/           # Preprocessed stable data for reuse
-├─ outputs/                # Final exported results (e.g., test1_edit.mp4)
-└─ tests/                  # Unit and smoke tests
+│  ├─ raw/                   # Original .mp4 files (e.g., test1.mp4)
+│  ├─ interim/
+│  │   ├─ frames/<video_id>/  # Extracted frames
+│  │   └─ masks/<video_id>/   # Auto-generated or real alpha masks
+│  └─ processed/              # Reserved for future preprocessing
+│
+├─ outputs/
+│  ├─ defenses/<video_id>/<variant>/        # Defended alpha masks
+│  ├─ frames_defended/<video_id>/<variant>/ # Composited preview frames
+│  ├─ videos/<video_id>_<variant>.mp4       # Exported defended videos
+│  └─ bench_<video_id>.csv                  # Batch-run results summary
+│
+└─ tests/
+   └─ test_defenses.py        # Unit tests for erosion and I/O
 ```
 
 ---
@@ -58,53 +102,84 @@ CSE227_Project/
 ```bash
 bash scripts/dev_install.sh
 ```
-Creates `.venv` and installs all dependencies.
+Creates `.venv` and installs dependencies.
 
-### 2. Add Your Sample Video
-Place your file in:
-```
-data/raw/test1.mp4
+### 2. Register Your Dataset
+Edit or extend `configs/datasets.yml`:
+```yaml
+datasets:
+  test1:
+    raw_video: data/raw/test1.mp4
+    frames_dir: data/interim/frames/test1
+    masks_dir: data/interim/masks/test1
+    outputs_root: outputs
+    fps: 24
 ```
 
-### 3. Run the Example Edit
+### 3. Prepare Data (extract frames & generate masks)
 ```bash
-bash scripts/run_edit.sh
+python scripts/prepare_data.py --dataset test1
 ```
-or run manually:
+This:
+- Extracts frames from `data/raw/test1.mp4` to `data/interim/frames/test1/`
+- Generates background-subtraction masks to `data/interim/masks/test1/`
+
+### 4. Run a Defense
 ```bash
-source .venv/bin/activate
-python -m vaderx.cli edit   --in_path data/raw/test1.mp4   --out_path outputs/test1_edit.mp4   --resize 1280x720   --gray
+python -m pipeline --dataset test1 --defense erosion --params "radius: 9" --seed 1234
+```
+Outputs:
+```
+outputs/defenses/test1/erosion_r9/*.png
+outputs/frames_defended/test1/erosion_r9/*.png
 ```
 
-This reads `test1.mp4`, converts to grayscale, resizes to 1280×720, and saves to `outputs/test1_edit.mp4`.
-
-### 4. Optional: Use Config File
-Edit `configs/edit.sample.yaml`, then run:
+### 5. Export Video
 ```bash
-python -m vaderx.cli edit --config configs/edit.sample.yaml
+bash scripts/export_defended_video.sh test1 erosion_r9 24
+```
+Creates:
+```
+outputs/videos/test1_erosion_r9.mp4
 ```
 
-### 5. Deactivate the virtual environment
-
-To exit the virtual environment created by `scripts/dev_install.sh`:
+### 6. Batch All Defenses
 ```bash
-deactivate
+python scripts/bench_defenses.py --dataset test1
 ```
-
-To activate it again later:
-```bash
-source .venv/bin/activate
+Generates:
 ```
-
+outputs/bench_test1.csv
+```
+containing all defense configurations and output directories.
 
 ---
 
-## 🧰 Next Steps
+## 🧠 Defense Mechanisms (Summary)
 
-- Extend `ops.py` with new effects (crop, fade, stabilize).  
-- Add metrics logging and visualization under `outputs/logs/`.  
-- Implement ML-assisted or Houdini-inspired pipelines for advanced editing.
+| Defense Type | Description | Key Params | Effect |
+|---------------|--------------|-------------|---------|
+| **Erosion** | Morphological shrink of alpha region | `radius` | Removes edge detail |
+| **Boundary Noise** | Adds Gaussian noise within edge band | `sigma`, `band_width` | Breaks clean boundary predictability |
+| **Temporal Jitter** | Randomly shifts alpha masks across frames | `shift_px`, `prob` | Reduces temporal consistency |
 
 ---
 
-**Course:** CSE 227 — Fall 2025
+## 🧰 Development Notes
+
+- All generated outputs (`data/interim/**`, `outputs/**`) are **ignored by `.gitignore`** — safe to keep local.  
+- The legacy `vaderx/` pipeline remains runnable for testing independent editing operations.  
+- Defense pipeline is fully modular: new methods can be added to `src/defense/defenses.py` and automatically picked up by the CLI.
+
+---
+
+## 💡 Next Steps
+
+- Integrate **attack baseline (T3)** outputs into the same dataset registry for cross-comparison.  
+- Add **metrics evaluation (ELR / BER)** script to measure leakage per variant.  
+- Optionally add GPU acceleration for batch defenses.
+
+---
+
+**Course:** CSE 227 — Fall 2025  
+**Contributors:** Team Defense (Jialin He et al.)

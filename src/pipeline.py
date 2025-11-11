@@ -5,6 +5,9 @@ import os
 from typing import Optional, Tuple, Dict
 import yaml, typer, numpy as np
 
+# NEW: dataset config
+from config import get_dataset
+
 from defense.io import (
     load_alpha_sequence, save_alpha_sequence,
     load_video_frames_optional, save_frames_sequence,
@@ -23,7 +26,9 @@ def parse_size(s: Optional[str]) -> Optional[Tuple[int, int]]:
     return (int(m.group(1)), int(m.group(2)))
 
 def main(
-    video_id: str = typer.Option(..., "--video-id"),
+    # Either use --dataset or supply paths manually:
+    dataset: Optional[str] = typer.Option(None, "--dataset", help="Dataset name from configs/datasets.yml"),
+    video_id: Optional[str] = typer.Option(None, "--video-id", help="Video id (ignored if --dataset is used)"),
     masks_dir: str = typer.Option("data/interim/masks", "--masks-dir", "--masks_dir"),
     frames_dir: str = typer.Option("data/interim/frames", "--frames-dir", "--frames_dir"),
     out_alpha_root: str = typer.Option("outputs/defenses", "--out-alpha-root", "--out_alpha_root"),
@@ -31,11 +36,30 @@ def main(
     defense: str = typer.Option(..., "--defense"),
     params: Optional[str] = typer.Option(None, "--params"),
     resize: Optional[str] = typer.Option(None, "--resize"),
-    seed: Optional[int] = typer.Option(None, "--seed", help="Set numpy random seed for reproducibility"),
+    seed: Optional[int] = typer.Option(None, "--seed"),
 ):
     if seed is not None:
         np.random.seed(int(seed))
 
+    # Resolve dataset config if provided
+    if dataset:
+        ds = get_dataset(dataset)
+        vid = ds.video_id
+        video_id = vid
+        # Prefer config paths; allow CLI overrides if user changed them explicitly
+        masks_dir = masks_dir if masks_dir != "data/interim/masks" else ds.get("masks_dir", masks_dir)
+        frames_dir = frames_dir if frames_dir != "data/interim/frames" else ds.get("frames_dir", frames_dir)
+        out_root = ds.get("outputs_root", None)
+        if out_root:
+            if out_alpha_root == "outputs/defenses":
+                out_alpha_root = os.path.join(out_root, "defenses")
+            if out_frames_root == "outputs/frames_defended":
+                out_frames_root = os.path.join(out_root, "frames_defended")
+
+    if not video_id:
+        raise typer.BadParameter("You must specify --video-id or --dataset")
+
+    # Parse params
     cfg: Dict = {}
     if params:
         if os.path.isfile(params):
@@ -44,12 +68,14 @@ def main(
         else:
             cfg = yaml.safe_load(params) or {}
 
+    # Load alphas
     alpha_in_dir = os.path.join(masks_dir, video_id)
     alphas = load_alpha_sequence(alpha_in_dir)
     if not alphas:
         typer.secho(f"[warn] No masks found under {alpha_in_dir}", fg=typer.colors.YELLOW)
         raise SystemExit(2)
 
+    # Apply defense
     dname = defense.lower().strip()
     if dname == "erosion":
         radius = int(cfg.get("radius", 9))
@@ -68,9 +94,11 @@ def main(
     else:
         raise typer.BadParameter("Unknown --defense")
 
+    # Save defended alphas
     out_alpha_dir = os.path.join(out_alpha_root, video_id, variant)
     save_alpha_sequence(alphas_def, out_alpha_dir)
 
+    # Optional defended frames
     frames_in_dir = os.path.join(frames_dir, video_id)
     frames = load_video_frames_optional(frames_in_dir)
     if frames:
