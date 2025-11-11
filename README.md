@@ -133,6 +133,7 @@ python -m vaderx.cli segment \
   --mask_root masks \
   --backend auto \
   --smooth_kernel 5
+  
 02：利用掩码生成elr,ber
 python scripts/measure_leakage.py \
   --video data/raw/test1.mp4 \
