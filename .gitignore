@@ -14,11 +14,17 @@ __pycache__/
 data/raw/**
 data/interim/**
 data/processed/**
-outputs/**
+# NEW: ignore defended frames if ever written under data (older runs)
+data/frames_defended/**
 
+# --- Outputs (final exports; keep only placeholders) ---
+outputs/**
 # Keep placeholder files so empty dirs stay in Git
 !.gitkeep
 !**/.gitkeep
+
+# --- If someone accidentally writes to a top-level 'defenses' folder, ignore it entirely ---
+defenses/**
 
 # --- Media anywhere (avoid accidental commits) ---
 *.mp4

@@ -1,0 +1,9 @@
+# Parameter grid for defense sweeps
+erosion:
+  radius: [3, 5, 9, 13]
+temporal_jitter:
+  shift_px: [1, 2, 3]
+  prob: [0.3, 0.6]
+boundary_noise:
+  sigma: [0.02, 0.04, 0.06]
+  band_width: [3, 5, 8]
