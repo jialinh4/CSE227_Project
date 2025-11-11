@@ -155,6 +155,58 @@ containing all defense configurations and output directories.
 
 ---
 
+
+## 🧹 Cleaning Generated Files
+
+To keep the repository clean and lightweight, you can automatically remove all generated intermediate and output files while preserving your **raw videos** and required directory structure.
+
+Run:
+```bash
+bash scripts/clean_generated.sh
+```
+
+This will:
+
+- **Delete all generated content** under:
+  - `data/interim/**`
+  - `data/processed/**`
+  - `outputs/**`
+  - (legacy) `data/frames_defended/**`
+  - (legacy) top-level `defenses/**`
+- **Preserve**:
+  - `data/raw/**` (your original videos)
+  - Required folders (with `.gitkeep` placeholders)
+
+Optional flags:
+```bash
+--dry-run   # Preview actions without deleting anything
+--yes       # Skip confirmation prompt and clean directly
+```
+
+Example:
+```bash
+bash scripts/clean_generated.sh --dry-run   # just preview
+bash scripts/clean_generated.sh --yes       # clean immediately
+```
+
+After cleaning, the minimal directory tree is automatically recreated:
+```
+data/
+  ├─ raw/
+  ├─ interim/
+  │   ├─ frames/
+  │   └─ masks/
+  └─ processed/
+outputs/
+  ├─ defenses/
+  ├─ frames_defended/
+  └─ videos/
+```
+
+This keeps your repository tidy while maintaining all necessary structure for subsequent runs.
+
+---
+
 ## 🧠 Defense Mechanisms (Summary)
 
 | Defense Type | Description | Key Params | Effect |

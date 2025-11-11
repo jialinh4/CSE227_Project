@@ -5,8 +5,7 @@ import os
 from typing import Optional, Tuple, Dict
 import yaml, typer, numpy as np
 
-# NEW: dataset config
-from config import get_dataset
+from config import get_dataset  # dataset registry
 
 from defense.io import (
     load_alpha_sequence, save_alpha_sequence,
@@ -42,13 +41,14 @@ def main(
         np.random.seed(int(seed))
 
     # Resolve dataset config if provided
+    use_leaf_dirs = False
     if dataset:
         ds = get_dataset(dataset)
-        vid = ds.video_id
-        video_id = vid
-        # Prefer config paths; allow CLI overrides if user changed them explicitly
-        masks_dir = masks_dir if masks_dir != "data/interim/masks" else ds.get("masks_dir", masks_dir)
-        frames_dir = frames_dir if frames_dir != "data/interim/frames" else ds.get("frames_dir", frames_dir)
+        video_id = ds.video_id
+        # Use config leaf dirs (already include <video_id>)
+        masks_dir = ds.get("masks_dir", masks_dir)
+        frames_dir = ds.get("frames_dir", frames_dir)
+        use_leaf_dirs = True
         out_root = ds.get("outputs_root", None)
         if out_root:
             if out_alpha_root == "outputs/defenses":
@@ -68,8 +68,13 @@ def main(
         else:
             cfg = yaml.safe_load(params) or {}
 
+    # Build input dirs:
+    # - dataset mode: masks_dir / frames_dir are already leaf dirs
+    # - manual mode: they are roots; append <video_id>
+    alpha_in_dir = masks_dir if use_leaf_dirs else os.path.join(masks_dir, video_id)
+    frames_in_dir = frames_dir if use_leaf_dirs else os.path.join(frames_dir, video_id)
+
     # Load alphas
-    alpha_in_dir = os.path.join(masks_dir, video_id)
     alphas = load_alpha_sequence(alpha_in_dir)
     if not alphas:
         typer.secho(f"[warn] No masks found under {alpha_in_dir}", fg=typer.colors.YELLOW)
@@ -99,7 +104,6 @@ def main(
     save_alpha_sequence(alphas_def, out_alpha_dir)
 
     # Optional defended frames
-    frames_in_dir = os.path.join(frames_dir, video_id)
     frames = load_video_frames_optional(frames_in_dir)
     if frames:
         size = parse_size(resize)
