@@ -136,7 +136,7 @@ outputs/frames_defended/test1/erosion_r9/*.png
 
 ### 5. Export Video
 ```bash
-bash scripts/export_defended_video.sh test1 erosion_r9 24
+python scripts/export_defended_video.py test1 erosion_r9 24
 ```
 Creates:
 ```
