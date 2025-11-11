@@ -125,6 +125,50 @@ The optional `--warmup_frames` flag suppresses the first N frames to avoid initi
 
 > `bash scripts/run_leakage_pipeline.sh data/raw/test1.mp4 test1_zoom` already wires snapshots on by default, writing them to `results/snapshots/test1_zoom/`. Override paths/thresholds with `SNAPSHOT_DIR`, `SNAPSHOT_ELR_THRESHOLD`, etc. environment variables before running the script.
 
+
+# defenses实验前baseline准备：
+01: 对目标视频生成掩码
+python -m vaderx.cli segment \
+  --in_path data/raw/test1.mp4 \
+  --mask_root masks \
+  --backend auto \
+  --smooth_kernel 5
+02：利用掩码生成elr,ber
+python scripts/measure_leakage.py \
+  --video data/raw/test1.mp4 \
+  --mask_dir masks/test1 \
+  --results_dir results \
+  --warmup_frames 30 \
+  --snapshot_dir results/snapshots \
+  --snapshot_elr_threshold 0.85 \ 
+  --snapshot_ber_threshold 0.6
+  
+# Defenses
+1.Jitter
+01:对目标视频生成防御掩码：
+python scripts/defenses.py --mask_dir masks/test1 --out_dir defenses/test1/jitter_s2_p0.6 --method jitter --max_shift 2 --prob 0.6
+
+02：利用防御掩码计算elr,ber:
+python scripts/measure_leakage.py \
+  --video data/raw/test1.mp4 \
+  --mask_dir defenses/test1/jitter_s2_p0.6 \
+  --results_dir results \
+  --video_id test1_jitter_s2_p0.6 \
+  --warmup_frames 30 \
+  --snapshot_dir results/snapshots \
+  --snapshot_elr_threshold 0.85 \
+  --snapshot_ber_threshold 0.6
+
+
+
+
+
+
+
+
+
+
+
 ### 8. Deactivate the virtual environment
 
 To exit the virtual environment created by `scripts/dev_install.sh`:
