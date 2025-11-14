@@ -75,7 +75,7 @@ python scripts/attack_reconstruct_vb.py \
   --vb_image data/vb/gg_bridge.jpg \
   --out_recon results/attack/bridge1_vb_recon_aggr.png \
   --out_heatmap results/attack/bridge1_vb_heatmap_aggr.png \
-  --residual_threshold 35 \
+  --residual_threshold 50 \
   --min_count 1 \
   --mask_threshold 0.5
 ```
@@ -125,7 +125,7 @@ python scripts/attack_reconstruct_vb.py \
   --vb_image data/vb/gg_bridge.jpg \
   --out_recon results/attack/bridge1_vb_recon_def.png \
   --out_heatmap results/attack/bridge1_vb_heatmap_def.png \
-  --residual_threshold 35 \
+  --residual_threshold 50 \
   --min_count 1 \
   --mask_threshold 0.5
 ```
