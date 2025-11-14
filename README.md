@@ -69,7 +69,6 @@ python scripts/measure_leakage.py \
 ```
 03：Baseline的重建攻击,生成效果图
 ```bash
-  03：Baseline的重建攻击,生成效果图-新版
 python scripts/attack_reconstruct_vb.py \
   --video data/raw/test1.mp4 \
   --mask_dir masks/test1 \
