@@ -44,16 +44,20 @@ data/raw/test1.mp4
 **Course:** CSE 227 — Fall 2025
 # 实验准备
 实验前没有  .venu 的话先激活
+```bash
 source .venv/bin/activate
+```
 # defenses实验前baseline准备：
 01: 对目标baseline视频生成掩码
+```bash
 python -m vaderx.cli segment \
   --in_path data/raw/test1.mp4 \
   --mask_root masks \
   --backend auto \
   --smooth_kernel 1
-
+```
 02：利用掩码生成Baseline的 elr,ber
+```bash
 python scripts/measure_leakage.py \
   --video data/raw/test1.mp4 \
   --mask_dir masks/test1 \
@@ -62,36 +66,43 @@ python scripts/measure_leakage.py \
   --snapshot_dir results/snapshots \
   --snapshot_elr_threshold 0.85 \
   --snapshot_ber_threshold 0.6
-
+```
 03：Baseline的重建攻击,生成效果图
+```bash
   python scripts/attack_reconstruct.py \
   --video data/raw/test1.mp4 \
   --mask_dir masks/test1 \
   --out results/attack/blur1_baseline_ring_attack.png \
   --use_ring \
   --mask_threshold 0.5
-  
+```
 # Defenses
 1.Jitter
 01:对目标视频生成防御掩码：
+```bash
 python scripts/defenses.py --mask_dir masks/test1 --out_dir defenses/test1/jitter_s2_p0.6 --method jitter --max_shift 2 --prob 0.6
-
+```
 
 02：用jitter掩码生成blackout 防御视频：
+```bash
 python scripts/compose_defense_video.py \
   --raw_video data/raw/test1.mp4 \
   --raw_mask_dir masks/test1 \
   --defense_mask_dir defenses/test1/jitter_s2_p0.6 \
-  --output defense_videos/blur1_jitter_black.mp4 
+  --output defense_videos/blur1_jitter_black.mp4
+```
 
 03: 对防御视频生成新掩码
+```bash
 python -m vaderx.cli segment \
   --in_path defense_videos/blur1_jitter_black.mp4 \
   --mask_root masks \
   --backend auto \
   --smooth_kernel 1
+```
 
 04：对防御视频测ELR，BER
+```bash
 python scripts/measure_leakage.py \
   --video defense_videos/blur1_jitter_black.mp4 \
   --mask_dir masks/blur1_jitter_black \
@@ -101,15 +112,17 @@ python scripts/measure_leakage.py \
   --snapshot_dir results/snapshots \
   --snapshot_elr_threshold 0.85 \
   --snapshot_ber_threshold 0.6
-
+```
 
 05：重建攻击防御视频，生成效果图：
+```bash
 python scripts/attack_reconstruct.py \
   --video defense_videos/blur1_jitter_black.mp4 \
   --mask_dir masks/blur1_jitter_black \
   --out results/attack/blur1_jitter_black_attack.png \
   --use_ring \
   --mask_threshold 0.5
+```
 
 
 
