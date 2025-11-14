@@ -69,11 +69,15 @@ python scripts/measure_leakage.py \
 ```
 03：Baseline的重建攻击,生成效果图
 ```bash
-  python scripts/attack_reconstruct.py \
+  03：Baseline的重建攻击,生成效果图-新版
+python scripts/attack_reconstruct_vb.py \
   --video data/raw/test1.mp4 \
   --mask_dir masks/test1 \
-  --out results/attack/blur1_baseline_ring_attack.png \
-  --use_ring \
+  --vb_image data/vb/gg_bridge.jpg \
+  --out_recon results/attack/bridge1_vb_recon_aggr.png \
+  --out_heatmap results/attack/bridge1_vb_heatmap_aggr.png \
+  --residual_threshold 35 \
+  --min_count 1 \
   --mask_threshold 0.5
 ```
 # Defenses
@@ -116,11 +120,14 @@ python scripts/measure_leakage.py \
 
 05：重建攻击防御视频，生成效果图：
 ```bash
-python scripts/attack_reconstruct.py \
+python scripts/attack_reconstruct_vb.py \
   --video defense_videos/blur1_jitter_black.mp4 \
   --mask_dir masks/blur1_jitter_black \
-  --out results/attack/blur1_jitter_black_attack.png \
-  --use_ring \
+  --vb_image data/vb/gg_bridge.jpg \
+  --out_recon results/attack/bridge1_vb_recon_def.png \
+  --out_heatmap results/attack/bridge1_vb_heatmap_def.png \
+  --residual_threshold 35 \
+  --min_count 1 \
   --mask_threshold 0.5
 ```
 
