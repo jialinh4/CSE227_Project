@@ -130,7 +130,42 @@ python scripts/attack_reconstruct_vb.py \
   --mask_threshold 0.5
 ```
 
+# Evaluation based on GT
+01: Baseline video leaked pixels percentage
+```bash
+python scripts/compute_leaked_pixels_percentage.py \
+  --video data/raw/test1.mp4 \
+  --mask_dir masks/test1 \
+  --gt_bg data/gt/test1_bg.png \
+  --warmup_frames 30 \
+  --out_txt results/attack/test1_leak_baseline.txt
+```
 
+02: Defense video leaked pixels percentage
+```bash
+python scripts/compute_leaked_pixels_percentage.py \
+  --video defense_videos/blur1_jitter_black.mp4 \
+  --mask_dir masks/blur1_jitter_black \
+  --gt_bg data/gt/test1_bg.png \
+  --warmup_frames 30 \
+  --out_txt results/attack/test1_leak_defense.txt
+```
+
+03: Baseline video attack reconstructed percentage
+```bash
+python scripts/compute_reconstructed_percentage.py \
+  --gt_bg data/gt/test1_bg.png \
+  --recon results/attack/bridge1_vb_recon_aggr.png \
+  --out_txt results/attack/bridge1_vb_recon_baseline.txt
+```
+
+04: Defense video attack reconstructed percentage
+```bash
+python scripts/compute_reconstructed_percentage.py \
+  --gt_bg data/gt/test1_bg.png \
+  --recon results/attack/bridge1_vb_recon_def.png \
+  --out_txt results/attack/bridge1_vb_recon_defense.txt
+```
 
 ### 8. Deactivate the virtual environment
 
