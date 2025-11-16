@@ -56,17 +56,13 @@ python -m vaderx.cli segment \
   --backend auto \
   --smooth_kernel 1
 ```
-02：利用掩码生成Baseline的 elr,ber
+
+02：Optional: 如果是虚化背景先抽一帧不动干净人像作为专用vb
 ```bash
-python scripts/measure_leakage.py \
-  --video data/raw/test1.mp4 \
-  --mask_dir masks/test1 \
-  --results_dir results \
-  --warmup_frames 30 \
-  --snapshot_dir results/snapshots \
-  --snapshot_elr_threshold 0.85 \
-  --snapshot_ber_threshold 0.6
+ffmpeg -i data/raw/test1.mp4 -vf "select=eq(n\,50)" -vframes 1 data/vb/test_blur_frame_raw.jpg
 ```
+把这一帧更名为gg_bridge.jpg
+
 03：Baseline的重建攻击,生成效果图
 ```bash
 python scripts/attack_reconstruct_vb.py \
@@ -104,20 +100,8 @@ python -m vaderx.cli segment \
   --smooth_kernel 1
 ```
 
-04：对防御视频测ELR，BER
-```bash
-python scripts/measure_leakage.py \
-  --video defense_videos/blur1_jitter_black.mp4 \
-  --mask_dir masks/blur1_jitter_black \
-  --results_dir results \
-  --video_id blur1_jitter_black \
-  --warmup_frames 30 \
-  --snapshot_dir results/snapshots \
-  --snapshot_elr_threshold 0.85 \
-  --snapshot_ber_threshold 0.6
-```
 
-05：重建攻击防御视频，生成效果图：
+04：重建攻击防御视频，生成效果图：
 ```bash
 python scripts/attack_reconstruct_vb.py \
   --video defense_videos/blur1_jitter_black.mp4 \
@@ -156,7 +140,8 @@ python scripts/compute_leaked_pixels_percentage.py \
 python scripts/compute_reconstructed_percentage.py \
   --gt_bg data/gt/test1_bg.png \
   --recon results/attack/bridge1_vb_recon_aggr.png \
-  --out_txt results/attack/bridge1_vb_recon_baseline.txt
+  --out_txt results/attack/bridge1_vb_recon_baseline.txt \
+  --recon_threshold 10
 ```
 
 04: Defense video attack reconstructed percentage
@@ -164,7 +149,8 @@ python scripts/compute_reconstructed_percentage.py \
 python scripts/compute_reconstructed_percentage.py \
   --gt_bg data/gt/test1_bg.png \
   --recon results/attack/bridge1_vb_recon_def.png \
-  --out_txt results/attack/bridge1_vb_recon_defense.txt
+  --out_txt results/attack/bridge1_vb_recon_defense.txt \
+  --recon_threshold 10
 ```
 
 ### 8. Deactivate the virtual environment
